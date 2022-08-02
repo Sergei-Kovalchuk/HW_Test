@@ -1,7 +1,9 @@
 import unittest
-
+import requests
 from unittest.mock import patch
+
 import app
+import main
 
 class TestMenuCommand(unittest.TestCase):
     @classmethod
@@ -28,7 +30,7 @@ class TestMenuCommand(unittest.TestCase):
     @patch('main.input', return_value = 'TEST')
     def test_delete_document(self, mock_input):
         app.delete_document()
-        self.assertNotIn({"type": "TEST", "number": "TEST", "name": "TEST"}, main.documents)
+        self.assertNotIn({"type": "TEST", "number": "TEST", "name": "TEST"}, app.documents)
         self.assertNotIn("TEST", app.directories['TEST'])
         app.documents.append({"type": "TEST", "number": "TEST", "name": "TEST"})
         app.directories.update({'TEST': ['TEST']})
@@ -47,7 +49,40 @@ class TestMenuCommand(unittest.TestCase):
         app.documents.remove({"type": "TEST", "number": "TEST", "name": "TEST"})
         app.directories.pop('TEST')
 
+class TestYandex(unittest.TestCase):
+    token = ''
 
+    def test_YaUploader_new_folder_1(self):
+
+        uploader = main.YaUploader('TEST')
+        result = uploader.new_folder()
+        self.assertEqual("Папка на создана на Я.Диск", result)
+
+    def test_YaUploader_new_folder_1_1(self):
+
+        uploader = main.YaUploader('/TEST')
+        result = uploader.new_folder()
+        self.assertEqual("Ошибка 409, возможно папка уже существует, либо в названии папки есть /", result)
+
+    def test_YaUploader_new_folder_2(self):
+
+        url = 'https://cloud-api.yandex.net/v1/disk/resources'
+        headers = {'Content-Type': 'application/json',
+                   'Authorization': 'OAuth {}'.format(self.token)}
+        params = {'path': "disk:/"}
+        result = requests.get(url, headers=headers, params=params).json()
+        dirs = []
+        for item in result['_embedded']['items']:
+            if item['type'] == 'dir':
+                dirs.append(item['name'])
+        self.assertIn("TEST", dirs, 'Папка не была создана')
+
+
+        url = 'https://cloud-api.yandex.net/v1/disk/resources'
+        headers = {'Content-Type': 'application/json',
+                   'Authorization': 'OAuth {}'.format(self.token)}
+        params = {'path': "disk:/TEST"}
+        requests.delete(url, headers=headers, params=params)
 
 if __name__ == '__main__':
     unittest.main()

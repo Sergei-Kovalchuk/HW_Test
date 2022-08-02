@@ -1,3 +1,5 @@
+import requests
+
 documents = [
   {"type": "passport", "number": "2207 876234", "name": "Василий Гупкин"},
   {"type": "invoice", "number": "11-2", "name": "Геннадий Покемонов"},
@@ -124,7 +126,26 @@ def secretary_programm():
     else:
       print("\nКоманда введена неверно............")
 
+class YaUploader:
+  token = ''
 
+  def __init__(self, folder_path):
+    self.folder_path = folder_path
+  def new_folder(self):
+    url = 'https://cloud-api.yandex.net/v1/disk/resources'
+    headers = {'Content-Type': 'application/json',
+               'Authorization': 'OAuth {}'.format(self.token)}
+    params = {'path': self.folder_path}
+    try:
+      res = requests.put(url, headers=headers, params=params)
+      res.raise_for_status()
+    except:
+      pass
+    if res.status_code == 201:
+      return 'Папка на создана на Я.Диск'
+    if res.status_code == 409:
+      return "Ошибка 409, возможно папка уже существует, либо в названии папки есть /"
+    return f'Ошибка {res.status_code}'
 
 
 
@@ -132,5 +153,8 @@ def secretary_programm():
 if __name__ == '__main__':
   secretary_programm()
 
+  folder = input('Новая яндекс-папка: ')
+  uploader = YaUploader(folder)
+  print(uploader.new_folder())
 
 
